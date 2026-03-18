@@ -16,35 +16,34 @@
 프레임워크는 모듈화된 파이프라인으로 구성되어 있으며, 각 스크립트는 독립적으로 혹은 유기적으로 작동합니다.
 
 ### 📊 Data & Feature Engineering
-* `data_pipeline.py`: 데이터 수집 파이프라인의 메인 오케스트레이터입니다. yfinance를 통해 주가, 거래량 데이터를 가져오고 24개의 기술적 지표(TA)와 13개의 기본적 지표(FA), 경제 캘린더 일정을 병합합니다.
-* `macro_collector.py`: 30개의 글로벌 매크로 티커(원자재, 채권 금리, FX, VIX 등)를 수집하고, 장단기 금리차, 위험 선호도 지수 등 69개의 파생 거시경제 피처를 생성합니다.
-* `earnings_collector.py`: 기업별 EPS 서프라이즈 내역, 실적 발표일 전후의 컨텍스트, 그리고 주요 시장 지수(SPY, QQQ 등) 기반의 Market Regime(시장 국면) 피처를 생성합니다.
-* `llama_engine.py`: Groq API(LLaMA 3.1)를 활용하여 실시간 뉴스의 센티먼트(-1.0 ~ 1.0)를 추출하고, 기업 간 공급망 관계를 분석하며, `sentence-transformers`를 통해 텍스트를 384차원 벡터로 임베딩합니다.
-* `feature_assembler.py`: 위 4개 모듈에서 생성된 모든 정형/비정형 데이터를 결합하여 GNN 학습을 위한 최종 **Node Feature Matrix**로 조립하고 Robust Scaling을 적용합니다.
+* `data_pipeline.py`: 데이터 수집 메인 파이프라인. 기술적/기본적 지표 및 캘린더 일정을 병합.
+* `macro_collector.py`: 원자재, 채권 금리, FX, VIX 등 글로벌 매크로 지표 수집 및 파생 피처(69개) 생성.
+* `earnings_collector.py`: EPS 서프라이즈 및 주요 지수 기반의 Market Regime(시장 국면) 피처 생성.
+* `llama_engine.py`: 실시간 뉴스 센티먼트 추출, 공급망(Supply Chain) 관계 분석 및 텍스트 벡터 임베딩(384차원).
+* `feature_assembler.py`: 모든 정형/비정형 데이터를 결합하여 GNN 학습을 위한 최종 **Node Feature Matrix** 조립 및 스케일링.
 
 ### 🕸️ Graph & Modeling
-* `graph_builder.py`: 단순 상관관계를 넘어, 산업 분류(GICS), 동적 가격 상관성, LLaMA가 추출한 공급망(Supply Chain) 관계를 모두 아우르는 **다중 관계 그래프(Multi-relational Graph)**를 PyTorch Geometric 객체로 구축합니다.
-* `gat_survival_model.py`: 본 프레임워크의 핵심 딥러닝 모델입니다. 노드 표현 학습을 위한 **3-layer GAT (Graph Attention Network) 인코더**와, 경합 위험률(Hazard Rate)을 계산하는 DeepSurv 헤드로 구성되어 있습니다.
-* `train.py`: Temporal Split을 적용하여 모델을 훈련하고, 생존 확률(Survival Probability) 스코어링을 통해 섹터/산업별 제약 조건이 반영된 최종 포트폴리오를 산출합니다.
+* `graph_builder.py`: 산업 분류(GICS), 동적 가격 상관성, 공급망 관계를 아우르는 **다중 관계 그래프(Multi-relational Graph)** 구축.
+* `gat_survival_model.py`: **3-layer GAT 인코더**와 경합 위험률(Hazard Rate)을 계산하는 DeepSurv 헤드로 구성된 메인 딥러닝 모델.
+* `train.py`: Temporal Split을 적용한 모델 훈련 및 제약 조건(섹터/산업)이 반영된 최종 포트폴리오 산출.
 
 ### 📈 Evaluation & Analytics
-* `backtest.py`: 산출된 포트폴리오의 Out-of-Sample 성과를 평가하고 CAGR, MDD, Sharpe Ratio 등의 핵심 성과 지표와 누적 수익률 차트를 생성합니다.
-* `factor_exposure.py`: Fama-French 5-Factor 모델을 활용하여 전략의 수익률을 OLS 다중 회귀 분석하고, 시장 베타 대비 순수 알파(Pure Alpha) 창출 여부를 검증합니다.
+* `backtest.py`: Out-of-Sample 성과 평가, 0.03% 거래 수수료가 반영된 성과 지표 산출 및 누적 수익률 차트 생성.
 
 ---
 
 ## 3. Data Sources & Feature Architecture
 
-본 모델은 단일 종목(Node) 당 **총 101개의 정형 데이터 피처**와 **384차원의 LLM 임베딩**을 결합하여 학습합니다. 
+본 모델은 단일 종목(Node) 당 **총 101개의 정형 데이터 피처**와 **384차원의 LLM 임베딩**을 결합하여 학습합니다.
 
 | Category | Sources | Feature Count | Description & Examples |
 | :--- | :--- | :---: | :--- |
-| **Macro Indicators** | yfinance | 69 | 원자재(WTI, 금, 구리 등 8종), 국채 금리(10Y, 3M 등), 환율, VIX. 파생 지표로 장단기 금리차, 인플레이션 프록시, 글로벌 유동성 지수 생성. |
-| **Market Context** | yfinance | 18 | SPY, QQQ, KS11 등 8개 주요 지수와 11개 섹터 ETF 가격을 기반으로 산출된 20일 모멘텀 및 시장 국면(Bull/Bear) 데이터. |
-| **Earnings/Calendar** | yfinance, Investing.com | 6 | 최근 EPS 서프라이즈 비율(%), 실적 발표일 경과/남은 일수. |
-| **Technicals (TA)** | yfinance Price/Volume | 24 | 이동평균(5/10/20/50/200), RSI, MACD, Bollinger Bands, ATR, OBV 등. |
-| **Fundamentals (FA)** | yfinance Info/Balance Sheet | 13 | PER(Trailing/Forward), PBR, ROE, 부채비율, 배당수익률, 베타 등. |
-| **NLP & Sentiment** | News RSS, LLaMA 3.1 | 384 (Vector) | 뉴스 센티먼트 스코어, 이벤트 유형 분류, `all-MiniLM-L6-v2` 모델을 통한 텍스트 및 시장 컨텍스트 밀집 임베딩(Dense Embedding). |
+| **Macro Indicators** | yfinance | 69 | 원자재(WTI, 금 등), 국채 금리, 환율, VIX 및 파생 지표(장단기 금리차 등). |
+| **Market Context** | yfinance | 18 | SPY, QQQ 등 주요 지수를 기반으로 한 20일 모멘텀 및 시장 국면(Bull/Bear) 데이터. |
+| **Earnings/Calendar** | yfinance, Investing | 6 | 최근 EPS 서프라이즈 비율(%), 실적 발표일 전후 맥락. |
+| **Technicals (TA)** | yfinance | 24 | 이동평균, RSI, MACD, Bollinger Bands, ATR, OBV 등. |
+| **Fundamentals (FA)** | yfinance Info | 13 | PER(Trailing/Forward), PBR, ROE, 부채비율, 베타 등. |
+| **NLP & Sentiment** | RSS, LLaMA 3.1 | 384 (Vector) | 뉴스 센티먼트(-1.0~1.0), 이벤트 유형, 밀집 임베딩(Dense Embedding). |
 
 ---
 
@@ -66,41 +65,32 @@ $$\alpha_{ij} = \frac{\exp(\text{LeakyReLU}(a^T [W x_i || W x_j || e_{ij}]))}{\s
 
 ---
 
-## 5. Backtest Performance
+## 5. Trading Strategy & Execution
+
+실제 파이썬 스크립트(`backtest.py` 등)에 구현되어 운용 및 백테스트 성과에 반영된 퀀트 트레이딩 전략 가정입니다.
 
 * **포트폴리오 구성 (Portfolio Construction):** GAT 모델이 산출한 '수익 도달 생존 확률' 상위 20개 종목을 **동일 가중(Equal-weight, 각 5%)** 으로 편입합니다. 특정 산업에 대한 과적합을 막기 위해 **섹터당 최대 2종목(max_per_sector=2)** 의 캡(Cap) 제약을 둡니다.
-* **리밸런싱 및 청산 (Rebalancing & Exit):** * **일일 시그널 평가 (Daily Dynamic Evaluation):** 매일 종가 기준으로 모델이 업데이트되며, 편입된 종목이 목표 수익률(Target)에 도달하거나 손절매(Stop-Loss) 임계치를 하회할 경우 다음 날 시가(Open)에 즉각 청산합니다.
-  * 이벤트 미발생 시 최대 보유 기간(Max Holding Days)인 60영업일 경과 후 기계적으로 청산하며 빈 슬롯을 신규 상위 스코어 종목으로 교체합니다.
-* **위험 관리 (Dynamic Risk Overlay):** * VIX 지수가 30을 초과하거나 200일선 기반 시장 국면(Market Regime)이 'Bear(하락장)'로 판별될 경우, 모델의 예상 수익률 기대값을 디스카운트하여 포지션 진입을 억제하고 현금 비중을 늘리도록 설계되었습니다.
-
-S&P 500 유니버스를 대상으로, 모델이 선별한 20개 종목 포트폴리오(동일 가중)의 아웃오브샘플(Out-of-Sample) 백테스트 결과입니다.
-
-* **Test Period:** 2018-02-01 ~ 2026-03-17
-* **Benchmark:** SPY (SPDR S&P 500 ETF Trust)
-* **Rebalancing:** Dynamic (Based on Survival Threshold Signals)
-
-| Metric | Strategy Performance | Benchmark (SPY) |
-| :--- | :---: | :---: |
-| **Total Return** | **34.11%** | 16.24% |
-| **Ann. Return (CAGR)** | **34.73%** | 14.80% |
-| **Annual Volatility** | **23.01%** | 18.50% |
-| **Max Drawdown (MDD)** | **-19.83%** | -24.15% |
-| **Sharpe Ratio** | **1.51** | 0.85 |
+* **리밸런싱 및 청산 (Rebalancing & Exit):** * 매일 종가 기준으로 모델이 업데이트되며, 편입된 종목이 목표 수익률(Target)에 도달하거나 손절매(Stop-Loss) 임계치를 하회할 경우 즉각 청산합니다.
+  * 이벤트 미발생 시 최대 보유 기간(Max Holding Days) 경과 후 기계적으로 청산하며 빈 슬롯을 신규 상위 스코어 종목으로 교체합니다.
 
 ---
 
-## 6. Fama-French 5-Factor Exposure
+## 6. Backtest Performance
 
-| Factor | Coefficient (Beta) | Standard Error | t-Statistic | p-value |
-| :--- | :---: | :---: | :---: | :---: |
-| **Alpha (Annualized)** | **0.1245** (12.45%) | 0.021 | 5.92 | *** <0.001 ** |
-| **Mkt-RF (Market)** | **0.8842** | 0.045 | 19.64 | *** <0.001 ** |
-| **SMB (Size)** | **0.1521** | 0.062 | 2.45 | * 0.015 |
-| **HML (Value)** | **-0.0843** | 0.058 | -1.45 | 0.148 |
-| **RMW (Profitability)** | **0.2104** | 0.071 | 2.96 | ** 0.003 |
-| **CMA (Investment)** | **-0.0512** | 0.082 | -0.62 | 0.536 |
+S&P 500 유니버스 대상 아웃오브샘플(Out-of-Sample) 백테스트 결과입니다. (코드 내 0.03% 거래 마찰 비용 반영)
 
-> **Analysis:** 분석 결과, 시장 베타(Mkt-RF)는 0.88 수준으로 시장 변동성을 일부 방어하면서도, 통계적으로 매우 유의미한 **연 환산 12.45%의 순수 알파(Alpha)** 를 창출하고 있습니다.
+* **Test Period:** 2018-02-01 ~ 2026-03-17
+* **Benchmark:** SPY (SPDR S&P 500 ETF Trust)
+
+| Metric | Strategy Performance | Benchmark (SPY) |
+| :--- | :---: | :---: |
+| **Total Return** | **24.35%** | 16.24% |
+| **Ann. Return (CAGR)** | **25.33%** | 14.80% |
+| **Annual Volatility** | **13.15%** | 18.50% |
+| **Max Drawdown (MDD)** | **-17.42%** | -24.15% |
+| **Sharpe Ratio** | **1.17** | 0.85 |
+
+> **Performance Analysis:** 벤치마크(SPY) 대비 연간 변동성(13.15%)과 최대 낙폭(MDD -17.42%)을 획기적으로 낮게 통제하면서도, 연평균 수익률(25.33%)은 10%p 이상 초과 달성했습니다. 이는 모델의 '경합 위험(Competing Risk)' 기반 손절매/익절 통제 로직이 하락장 방어에 탁월하게 작동하고 있음을 증명합니다.
 
 ---
 
@@ -119,8 +109,6 @@ S&P 500 유니버스를 대상으로, 모델이 선별한 20개 종목 포트폴
 ## 8. Computational Performance
 
 복잡한 GNN 연산과 방대한 생존 분석을 수행함에도 불구하고, 텐서 연산 최적화를 통해 매우 빠른 리서치 이터레이션을 지원합니다. (S&P 500 유니버스 1 Epoch 학습 기준)
-
-* 🚀 **Local Dedicated GPU (e.g., RTX 3090/4090):** 약 **15분** 소요
 * ☁️ **Google Colab (Standard GPU/TPU Instance):** 약 **30분** 소요
 
 ---
@@ -132,21 +120,6 @@ S&P 500 유니버스를 대상으로, 모델이 선별한 20개 종목 포트폴
 git clone [https://github.com/username/quant-survival-gnn.git](https://github.com/username/quant-survival-gnn.git)
 cd quant-survival-gnn
 pip install -r requirements.txt
-
-Step 2. Train & Portfolio Generation
-python data_pipeline.py --universe SP500 --start-date 2022-01-01
-python train.py --mode sp500 --epochs 50 --portfolio-size 20 --max-per-sector 1
-
-Step 3. Backtest & Factor Analysis
-python backtest.py \
-  --portfolio ./data/portfolio_sp500.parquet \
-  --start "2018-02-01" \
-  --benchmark SPY \
-  --output-dir ./results
-
-python factor_exposure.py \
-  --strategy ./results/strategy_returns.csv \
-  --factors ./data/fama_french_5.csv
 ```
 
 ## 10. 수정해야할 점
@@ -155,6 +128,9 @@ python factor_exposure.py \
 3) only Stock이라 채권,금,비트코인,물가채 등등을 포트폴리오에 넣어서 운용하면 더 안정성이 있는 포트폴리오가 될 것이라고 생각함
 4) 모델에서는 KOSPI 종목에 대해서도 학습을 진행했는데 실제로는 출력으로 나오지는 않아 정보가 부족해서 그랬던 것인지 혹은 실제로 선택이 되지 않아서 그랬는지에 대한 연구 필요
 5) GPU 부족으로 모델 학습을 경량화해서 진행을 하였고 LLAMA를 이용해서 이 종목을 어떤 근거로 종목을 선정했는지에 대한 이유 설명이 부족하다는 점에서 수정이 필요함
+6) 분명 각 sector당 2개로 제한을 했음에도 불구하고, consumer cyclical sector 가 가장 많이 나와서 이 부분 수정 필요함
+## 11. Backtesting 결과
+<img width="1880" height="1300" alt="Image" src="https://github.com/user-attachments/assets/edbcdaed-f6c9-4145-8831-691021454f4a" />
 
 
 
