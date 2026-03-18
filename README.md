@@ -143,8 +143,7 @@ python factor_exposure.py \
   --strategy ./results/strategy_returns.csv \
   --factors ./data/fama_french_5.csv
 
-## 9. Automated LLaMA Reports
-모델의 예측 결과가 도출되면 llama_engine.py 내의 ReportGenerator가 작동하여 예상 목표 도달 시간(Median Time to Target)을 생성합니다.
+
 
 
 
