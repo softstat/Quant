@@ -147,7 +147,14 @@ python backtest.py \
 python factor_exposure.py \
   --strategy ./results/strategy_returns.csv \
   --factors ./data/fama_french_5.csv
+```
 
+## 10. 수정해야할 점
+1) 슬리피지을 추가해서 내가 만든 모델이 실제로 운용이 잘 되고 있는지 확인이 필요
+2) backtest에서 bootstrap을 이용해서 더 reasonable 하게 만들어야 함
+3) only Stock이라 채권,금,비트코인,물가채 등등을 포트폴리오에 넣어서 운용하면 더 안정성이 있는 포트폴리오가 될 것이라고 생각함
+4) 모델에서는 KOSPI 종목에 대해서도 학습을 진행했는데 실제로는 출력으로 나오지는 않아 정보가 부족해서 그랬던 것인지 혹은 실제로 선택이 되지 않아서 그랬는지에 대한 연구 필요
+5) GPU 부족으로 모델 학습을 경량화해서 진행을 하였고 LLAMA를 이용해서 이 종목을 어떤 근거로 종목을 선정했는지에 대한 이유 설명이 부족하다는 점에서 수정이 필요함
 
 
 
