@@ -1,0 +1,14 @@
+pandas
+numpy
+torch
+yfinance
+requests
+beautifulsoup4
+tqdm
+scikit-learn
+networkx
+matplotlib
+pyarrow
+streamlit
+groq
+sentence-transformers
