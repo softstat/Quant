@@ -68,6 +68,11 @@ $$\alpha_{ij} = \frac{\exp(\text{LeakyReLU}(a^T [W x_i || W x_j || e_{ij}]))}{\s
 
 ## 5. Backtest Performance
 
+* **포트폴리오 구성 (Portfolio Construction):** GAT 모델이 산출한 '수익 도달 생존 확률' 상위 20개 종목을 **동일 가중(Equal-weight, 각 5%)** 으로 편입합니다. 특정 산업에 대한 과적합을 막기 위해 **섹터당 최대 2종목(max_per_sector=2)** 의 캡(Cap) 제약을 둡니다.
+* **리밸런싱 및 청산 (Rebalancing & Exit):** * **일일 시그널 평가 (Daily Dynamic Evaluation):** 매일 종가 기준으로 모델이 업데이트되며, 편입된 종목이 목표 수익률(Target)에 도달하거나 손절매(Stop-Loss) 임계치를 하회할 경우 다음 날 시가(Open)에 즉각 청산합니다.
+  * 이벤트 미발생 시 최대 보유 기간(Max Holding Days)인 60영업일 경과 후 기계적으로 청산하며 빈 슬롯을 신규 상위 스코어 종목으로 교체합니다.
+* **위험 관리 (Dynamic Risk Overlay):** * VIX 지수가 30을 초과하거나 200일선 기반 시장 국면(Market Regime)이 'Bear(하락장)'로 판별될 경우, 모델의 예상 수익률 기대값을 디스카운트하여 포지션 진입을 억제하고 현금 비중을 늘리도록 설계되었습니다.
+
 S&P 500 유니버스를 대상으로, 모델이 선별한 20개 종목 포트폴리오(동일 가중)의 아웃오브샘플(Out-of-Sample) 백테스트 결과입니다.
 
 * **Test Period:** 2018-02-01 ~ 2026-03-17
