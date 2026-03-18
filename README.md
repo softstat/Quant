@@ -129,7 +129,7 @@ pip install -r requirements.txt
 4) 모델에서는 KOSPI 종목에 대해서도 학습을 진행했는데 실제로는 출력으로 나오지는 않아 정보가 부족해서 그랬던 것인지 혹은 실제로 선택이 되지 않아서 그랬는지에 대한 연구 필요
 5) GPU 부족으로 모델 학습을 경량화해서 진행을 하였고 LLAMA를 이용해서 이 종목을 어떤 근거로 종목을 선정했는지에 대한 이유 설명이 부족하다는 점에서 수정이 필요함
 6) 분명 각 sector당 2개로 제한을 했음에도 불구하고, consumer cyclical sector 가 가장 많이 나와서 이 부분 수정 필요함
-## 11. Backtesting 결과
+## 11. Backtesting 결과(26.03.17)
 <img width="1880" height="1300" alt="Image" src="https://github.com/user-attachments/assets/edbcdaed-f6c9-4145-8831-691021454f4a" />
 
 
